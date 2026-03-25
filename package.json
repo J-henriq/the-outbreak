@@ -1,0 +1,27 @@
+{
+  "name": "arcane-engineers",
+  "version": "1.0.0",
+  "description": "Arcane Engineers - A co-op action-strategy RPG where magic and machinery intertwine",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "test": "npx jest --testPathPattern=tests/",
+    "lint": "npx eslint js/ --ext .js"
+  },
+  "keywords": [
+    "game",
+    "rpg",
+    "co-op",
+    "html5",
+    "canvas",
+    "strategy"
+  ],
+  "author": "J-henriq",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "serve": "^14.2.3"
+  }
+}
