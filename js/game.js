@@ -454,16 +454,12 @@ class Game {
     // Update players
     this.players.forEach(p => p.update(deltaTime));
 
-    // Update entities
-    this.entities.updateEnemies(deltaTime, this.players, this.dungeon, this.dungeonGen);
+    // Update entities — updateEnemies returns enemies that died this frame
+    const killedEnemies = this.entities.updateEnemies(deltaTime, this.players, this.dungeon, this.dungeonGen);
+    killedEnemies.forEach(e => this.onEnemyKilled(e));
     this.entities.updateMachines(deltaTime, this.players);
     this.entities.updateProjectiles(deltaTime, this.players, this.dungeonGen, this.dungeon);
     this.entities.updateEffects(deltaTime);
-
-    // Check enemy deaths and award exp/score
-    const justKilled = this.entities.enemies.filter(e => !e.isAlive);
-    // Note: dead enemies are removed in updateEnemies, so we track kills separately
-    // The kill tracking is handled below
 
     // Update camera
     if (this.localPlayer) {
@@ -761,21 +757,7 @@ class Game {
       const deltaTime = Math.min(timestamp - this.lastTime, 50);
       this.lastTime = timestamp;
 
-      // Track enemy kills
-      const prevEnemyCount = this.entities.enemies.length;
       this.update(deltaTime);
-      const newEnemyCount = this.entities.enemies.length;
-
-      // Simple kill detection
-      if (prevEnemyCount > newEnemyCount && this.state === CONFIG.GAME_STATES.PLAYING) {
-        const killed = prevEnemyCount - newEnemyCount;
-        // Award for the kill (approximate)
-        for (let k = 0; k < killed; k++) {
-          this.killCount++;
-          this.score += 50 * this.dungeonLevel;
-        }
-      }
-
       this.render();
       this.animationId = requestAnimationFrame(loop);
     };

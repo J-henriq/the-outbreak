@@ -21,14 +21,23 @@
 
 ### Play in browser
 
-Open `index.html` directly in a modern browser, or serve it locally:
+Open `index.html` directly in a modern browser, or serve it locally using one of these options:
 
+**Option A — npm (recommended):**
 ```bash
 npm install
 npm start
 ```
+Then open `http://localhost:3000`.
 
-Then open `http://localhost:3000` in your browser.
+**Option B — Python (no install needed):**
+```bash
+python3 -m http.server 8000
+```
+Then open `http://localhost:8000`.
+
+**Option C — Open file directly:**
+Double-click `index.html` (works in most browsers without a server).
 
 ### Controls
 
@@ -36,6 +45,7 @@ Then open `http://localhost:3000` in your browser.
 |---|---|
 | `WASD` / Arrow Keys | Move |
 | Left Click | Basic attack |
+| Right Click | Use Ability 1 |
 | `1` / `2` / `3` | Use ability |
 | `E` | Interact (chests, portals) |
 | `I` | Open inventory |

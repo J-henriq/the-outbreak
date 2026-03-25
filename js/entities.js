@@ -108,8 +108,10 @@ class EntityManager {
       }
     });
 
-    // Remove dead enemies
+    // Collect killed enemies before removing them so callers can process drops/EXP
+    const killed = this.enemies.filter(e => !e.isAlive);
     this.enemies = this.enemies.filter(e => e.isAlive);
+    return killed;
   }
 
   damageEnemy(enemyId, damage) {
