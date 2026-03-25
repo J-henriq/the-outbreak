@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ashenwild</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Title / Main Menu -->
+  <div id="screen-title" class="screen active">
+    <div class="title-bg"></div>
+    <div class="title-content">
+      <h1 class="game-title">ASHENWILD</h1>
+      <p class="game-subtitle">A brutal fantasy frontier awaits</p>
+      <button class="btn-primary" id="btn-start">ENTER THE FRONTIER</button>
+    </div>
+  </div>
+
+  <!-- Character Creation -->
+  <div id="screen-create" class="screen">
+    <div class="create-container">
+      <h2 class="section-title">CREATE YOUR CHARACTER</h2>
+
+      <div class="create-row">
+        <div class="create-col">
+          <h3 class="col-title">CHOOSE RACE</h3>
+          <div id="race-list" class="option-list"></div>
+          <div id="race-desc" class="option-desc"></div>
+        </div>
+        <div class="create-col">
+          <h3 class="col-title">CHOOSE CLASS</h3>
+          <div id="class-list" class="option-list"></div>
+          <div id="class-desc" class="option-desc"></div>
+        </div>
+        <div class="create-col preview-col">
+          <h3 class="col-title">PREVIEW</h3>
+          <canvas id="preview-canvas" width="200" height="280"></canvas>
+          <div id="stat-preview" class="stat-preview"></div>
+        </div>
+      </div>
+
+      <div class="name-row">
+        <label for="char-name">NAME YOUR CHARACTER</label>
+        <input type="text" id="char-name" placeholder="Enter name..." maxlength="20">
+      </div>
+
+      <div class="create-actions">
+        <button class="btn-secondary" id="btn-back-title">BACK</button>
+        <button class="btn-primary" id="btn-play">BEGIN JOURNEY</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Screen -->
+  <div id="screen-game" class="screen">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- HUD -->
+    <div id="hud">
+      <div id="hud-left">
+        <div class="hud-bars">
+          <div class="bar-row">
+            <span class="bar-label">HP</span>
+            <div class="bar-bg">
+              <div id="bar-hp" class="bar-fill bar-hp"></div>
+            </div>
+            <span id="bar-hp-text" class="bar-text"></span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">EN</span>
+            <div class="bar-bg">
+              <div id="bar-en" class="bar-fill bar-en"></div>
+            </div>
+            <span id="bar-en-text" class="bar-text"></span>
+          </div>
+        </div>
+        <div id="char-info">
+          <span id="hud-name"></span>
+          <span id="hud-class"></span>
+          <span id="hud-level">Lv.1</span>
+        </div>
+      </div>
+
+      <div id="hud-center">
+        <div id="zone-name"></div>
+        <div id="boss-bar" class="hidden">
+          <div class="boss-name" id="boss-name-text"></div>
+          <div class="bar-bg boss-bar-bg">
+            <div id="bar-boss" class="bar-fill bar-boss"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="hud-right">
+        <div id="skill-panel">
+          <div class="skill-row" id="skill-attack-row">
+            <span class="skill-name">Attack</span>
+            <div class="skill-bar-bg"><div id="sk-attack" class="skill-bar-fill"></div></div>
+            <span class="skill-lv" id="sk-attack-lv">1</span>
+          </div>
+          <div class="skill-row" id="skill-str-row">
+            <span class="skill-name">Strength</span>
+            <div class="skill-bar-bg"><div id="sk-str" class="skill-bar-fill"></div></div>
+            <span class="skill-lv" id="sk-str-lv">1</span>
+          </div>
+          <div class="skill-row" id="skill-agility-row">
+            <span class="skill-name">Agility</span>
+            <div class="skill-bar-bg"><div id="sk-agility" class="skill-bar-fill"></div></div>
+            <span class="skill-lv" id="sk-agility-lv">1</span>
+          </div>
+          <div class="skill-row" id="skill-prayer-row">
+            <span class="skill-name">Prayer</span>
+            <div class="skill-bar-bg"><div id="sk-prayer" class="skill-bar-fill"></div></div>
+            <span class="skill-lv" id="sk-prayer-lv">1</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Abilities Bar -->
+    <div id="ability-bar">
+      <div class="ability-slot" id="ab-0">
+        <div class="ability-icon" id="ab-icon-0"></div>
+        <div class="ability-key">1</div>
+        <div class="ability-cd" id="ab-cd-0"></div>
+      </div>
+      <div class="ability-slot" id="ab-1">
+        <div class="ability-icon" id="ab-icon-1"></div>
+        <div class="ability-key">2</div>
+        <div class="ability-cd" id="ab-cd-1"></div>
+      </div>
+      <div class="ability-slot" id="ab-2">
+        <div class="ability-icon" id="ab-icon-2"></div>
+        <div class="ability-key">3</div>
+        <div class="ability-cd" id="ab-cd-2"></div>
+      </div>
+      <div class="ability-slot" id="ab-3">
+        <div class="ability-icon" id="ab-icon-3"></div>
+        <div class="ability-key">4</div>
+        <div class="ability-cd" id="ab-cd-3"></div>
+      </div>
+      <div class="ability-slot" id="ab-4">
+        <div class="ability-icon" id="ab-icon-4"></div>
+        <div class="ability-key">5</div>
+        <div class="ability-cd" id="ab-cd-4"></div>
+      </div>
+    </div>
+
+    <!-- Inventory Toggle -->
+    <button id="btn-inventory" title="Inventory (I)">⚔ GEAR</button>
+
+    <!-- Inventory Panel -->
+    <div id="inventory-panel" class="hidden">
+      <h3>INVENTORY</h3>
+      <div id="equipped-slots">
+        <div class="equip-slot" data-slot="weapon"><span class="slot-label">Weapon</span><div class="slot-item" id="slot-weapon"></div></div>
+        <div class="equip-slot" data-slot="armor"><span class="slot-label">Armor</span><div class="slot-item" id="slot-armor"></div></div>
+        <div class="equip-slot" data-slot="offhand"><span class="slot-label">Off-hand</span><div class="slot-item" id="slot-offhand"></div></div>
+      </div>
+      <div id="bag-grid"></div>
+      <div id="item-tooltip" class="hidden"></div>
+    </div>
+
+    <!-- Message Log -->
+    <div id="message-log"></div>
+
+    <!-- Controls Help -->
+    <div id="controls-help">WASD/Arrows: Move &nbsp;|&nbsp; Click: Attack &nbsp;|&nbsp; 1-5: Abilities &nbsp;|&nbsp; I: Inventory</div>
+  </div>
+
+  <!-- Death Screen -->
+  <div id="screen-death" class="screen">
+    <div class="death-content">
+      <h2 class="death-title">YOU HAVE FALLEN</h2>
+      <p id="death-stats"></p>
+      <button class="btn-primary" id="btn-respawn">RISE AGAIN</button>
+      <button class="btn-secondary" id="btn-main-menu">MAIN MENU</button>
+    </div>
+  </div>
+
+  <!-- Victory Screen -->
+  <div id="screen-victory" class="screen">
+    <div class="victory-content">
+      <h2 class="victory-title">VICTORY</h2>
+      <p id="victory-msg"></p>
+      <button class="btn-primary" id="btn-continue">CONTINUE</button>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/skills.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/combat.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
