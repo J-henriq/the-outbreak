@@ -108,6 +108,20 @@ export class Game {
 
   setState(newState) {
     this.state = newState;
+    // Show/hide the correct overlay screen based on state
+    const screens = {
+      [GAME_STATE.MENU]: 'menu-screen',
+      [GAME_STATE.CHARACTER_CREATION]: 'char-create-screen'
+    };
+    // Hide all named screens first (except inventory/skill/quest/char which are toggled separately)
+    ['menu-screen', 'char-create-screen'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('active');
+    });
+    if (screens[newState]) {
+      const el = document.getElementById(screens[newState]);
+      if (el) el.classList.add('active');
+    }
   }
 
   startGame(name, cls) {
