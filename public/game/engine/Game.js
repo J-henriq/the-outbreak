@@ -123,6 +123,8 @@ export class Game {
     this.inventory.init(this.player);
     this.quest.init(this.player);
     this.skill.init(this.player);
+    // Wire inventory reference to player for arrow consumption
+    this.player._inventory = this.inventory;
 
     // Give starting items based on class
     this._giveStartingItems();
@@ -176,6 +178,7 @@ export class Game {
     this.inventory.init(this.player);
     this.quest.init(this.player);
     this.skill.init(this.player);
+    this.player._inventory = this.inventory;
 
     if (data.inventory) this.inventory.loadFromData(data.inventory);
     if (data.equipped) this.inventory.loadEquipped(data.equipped);
@@ -208,6 +211,24 @@ export class Game {
     const startArmor = createItem('leather_armor');
     this.inventory.addItem(startArmor);
     this.inventory.equip(startArmor, 'armor');
+
+    // Set up default action bar spells based on class
+    const classSpells = {
+      mage: [
+        { type: 'spell', id: 'fireball' },
+        { type: 'spell', id: 'ice_lance' },
+        { type: 'spell', id: 'heal' },
+        { type: 'spell', id: 'lightning_bolt' }
+      ],
+      archer: [
+        { type: 'spell', id: 'heal' }
+      ],
+      warrior: [
+        { type: 'spell', id: 'heal' }
+      ]
+    };
+    const spells = classSpells[this.player.class] || [];
+    spells.forEach((s, i) => this.player.setActionBar(i, s));
   }
 
   _spawnEntities(zone) {
@@ -311,6 +332,22 @@ export class Game {
       // Enemy attacks player
       if (this.combat) {
         this.combat.checkEnemyAttack(enemy, this.player, this.renderer);
+        // Ranged enemy shoot
+        if (enemy._wantsToShoot && enemy._shootTarget) {
+          enemy._wantsToShoot = false;
+          const dx = enemy._shootTarget.x - (enemy.x + enemy.size / 2);
+          const dy = enemy._shootTarget.y - (enemy.y + enemy.size / 2);
+          const len = Math.sqrt(dx * dx + dy * dy) || 1;
+          const speed = enemy.isMagic ? 260 : 340;
+          this.projectiles.push({
+            x: enemy.x + enemy.size / 2, y: enemy.y + enemy.size / 2,
+            vx: (dx / len) * speed, vy: (dy / len) * speed,
+            type: enemy.isMagic ? 'magic_bolt' : (enemy.isFireBreath ? 'fire_breath' : 'arrow'),
+            damage: enemy.damage, fromPlayer: false, life: 2.0,
+            color: enemy.isMagic ? '#aa44ff' : '#ccaa44',
+            angle: Math.atan2(dy, dx)
+          });
+        }
       }
     }
 
@@ -438,6 +475,8 @@ export class Game {
       this.inventory.addItem(drop);
       this.audio.playPickup();
       this.ui.showNotification(`Found: ${drop.name}`, this._rarityColor(drop.rarity));
+      // Quest: item collection tracking
+      this.quest.onItemCollected(drop.id);
     }
 
     // Quest update
