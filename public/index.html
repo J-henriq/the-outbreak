@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Outbreak - Multiplayer RPG</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a14;
+      color: #e0e0ff;
+      font-family: 'Courier New', monospace;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      width: 100vw;
+    }
+    #game-container {
+      position: relative;
+      width: 800px;
+      height: 600px;
+      border: 2px solid #4a4a6a;
+      box-shadow: 0 0 30px rgba(100, 100, 255, 0.3);
+    }
+    #gameCanvas {
+      display: block;
+      background: #1a1a2e;
+      image-rendering: pixelated;
+    }
+
+    /* ── HUD ── */
+    #hud {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      padding: 8px;
+      pointer-events: none;
+      z-index: 10;
+    }
+    #hud-bars { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .bar-container { display: flex; flex-direction: column; gap: 2px; }
+    .bar-label { font-size: 10px; color: #aaa; }
+    .bar-outer { width: 160px; height: 14px; background: #111; border: 1px solid #444; border-radius: 2px; overflow: hidden; }
+    .bar-outer.mana { width: 130px; }
+    .bar-outer.xp { width: 200px; }
+    .bar-inner { height: 100%; transition: width 0.2s; }
+    #hp-bar .bar-inner { background: linear-gradient(90deg, #cc0000, #ff4444); }
+    #mana-bar .bar-inner { background: linear-gradient(90deg, #0044cc, #4488ff); }
+    #xp-bar .bar-inner { background: linear-gradient(90deg, #cc8800, #ffcc00); }
+    .bar-text { position: absolute; width: 100%; text-align: center; font-size: 9px; font-weight: bold; color: #fff; text-shadow: 1px 1px 0 #000; line-height: 14px; }
+    #hud-info { display: flex; gap: 12px; align-items: center; margin-left: 8px; }
+    #level-display { font-size: 20px; font-weight: bold; color: #ffcc00; text-shadow: 1px 1px 0 #000; }
+    #gold-display { font-size: 13px; color: #ffcc44; }
+    #action-bar { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; z-index: 10; pointer-events: none; }
+    .action-slot {
+      width: 44px; height: 44px; background: rgba(0,0,0,0.7);
+      border: 2px solid #4a4a6a; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; color: #aaa; position: relative;
+    }
+    .action-slot .key-hint { position: absolute; top: 1px; left: 3px; font-size: 8px; color: #777; }
+    .action-slot.active { border-color: #ffcc00; }
+
+    /* ── Overlay Screens ── */
+    .screen {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 50;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .screen.active { display: flex; }
+    .screen h2 { font-size: 22px; color: #ffcc00; text-shadow: 0 0 10px rgba(255,200,0,0.5); margin-bottom: 16px; letter-spacing: 2px; }
+    .panel {
+      background: rgba(20,20,40,0.95);
+      border: 2px solid #4a4a6a;
+      border-radius: 6px;
+      padding: 16px;
+      width: 90%; max-width: 720px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .btn {
+      background: #2a2a4a; color: #e0e0ff; border: 1px solid #4a4a6a;
+      padding: 8px 20px; cursor: pointer; font-family: inherit; font-size: 13px;
+      border-radius: 3px; transition: all 0.15s;
+    }
+    .btn:hover { background: #3a3a6a; border-color: #8888cc; color: #fff; }
+    .btn.primary { background: #2a4a2a; border-color: #4a8a4a; color: #88ff88; }
+    .btn.primary:hover { background: #3a6a3a; }
+    .btn.danger { background: #4a2a2a; border-color: #8a4a4a; color: #ff8888; }
+    .close-btn { position: absolute; top: 8px; right: 12px; background: none; border: none; color: #888; font-size: 20px; cursor: pointer; z-index: 60; }
+    .close-btn:hover { color: #fff; }
+
+    /* ── Loading Screen ── */
+    #loading-screen { background: #0a0a14; z-index: 100; }
+    #loading-screen h1 { font-size: 36px; color: #cc4444; text-shadow: 0 0 20px rgba(200,50,50,0.8); letter-spacing: 4px; margin-bottom: 8px; }
+    #loading-screen p { color: #888; font-size: 13px; margin-bottom: 24px; }
+    #loading-bar-outer { width: 300px; height: 8px; background: #111; border: 1px solid #333; border-radius: 4px; overflow: hidden; }
+    #loading-bar-inner { height: 100%; width: 0%; background: linear-gradient(90deg, #cc4444, #ff6666); transition: width 0.3s; }
+    #loading-tip { color: #666; font-size: 11px; margin-top: 12px; max-width: 300px; text-align: center; }
+
+    /* ── Menu Screen ── */
+    #menu-screen { background: radial-gradient(ellipse at center, #1a0a2e 0%, #0a0a14 70%); z-index: 90; }
+    #menu-screen h1 { font-size: 42px; color: #cc2222; text-shadow: 0 0 30px rgba(200,30,30,0.8), 0 0 60px rgba(200,30,30,0.4); letter-spacing: 6px; margin-bottom: 4px; }
+    #menu-subtitle { color: #8888aa; font-size: 14px; letter-spacing: 2px; margin-bottom: 40px; }
+    #menu-buttons { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+    #menu-buttons .btn { width: 220px; font-size: 16px; padding: 12px; letter-spacing: 1px; }
+
+    /* ── Character Creation ── */
+    #char-create-screen { z-index: 85; }
+    #char-form { display: flex; flex-direction: column; gap: 16px; }
+    #char-form label { font-size: 12px; color: #aaa; margin-bottom: 4px; display: block; }
+    #char-form input[type=text] {
+      background: #111; color: #fff; border: 1px solid #444;
+      padding: 8px 12px; font-family: inherit; font-size: 14px; border-radius: 3px; width: 100%;
+    }
+    #char-form input[type=text]:focus { outline: none; border-color: #6666cc; }
+    .class-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .class-card {
+      background: #111; border: 2px solid #333; border-radius: 6px;
+      padding: 12px; cursor: pointer; transition: all 0.15s; text-align: center;
+    }
+    .class-card:hover { border-color: #6666cc; background: #1a1a2e; }
+    .class-card.selected { border-color: #ffcc00; background: #1a1a00; }
+    .class-icon { width: 48px; height: 48px; margin: 0 auto 8px; border-radius: 4px; }
+    .class-name { font-size: 14px; font-weight: bold; margin-bottom: 4px; }
+    .class-desc { font-size: 10px; color: #888; line-height: 1.4; }
+    .warrior-color { background: #8b1a1a; }
+    .mage-color { background: #1a1a8b; }
+    .archer-color { background: #1a6b1a; }
+
+    /* ── Inventory Screen ── */
+    #inventory-screen { align-items: flex-start; flex-direction: row; }
+    #inv-grid { display: grid; grid-template-columns: repeat(5, 52px); gap: 4px; }
+    .inv-slot {
+      width: 52px; height: 52px; background: #0d0d1a;
+      border: 1px solid #2a2a4a; border-radius: 3px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; position: relative; transition: border-color 0.1s;
+    }
+    .inv-slot:hover { border-color: #6666cc; }
+    .inv-slot.occupied { border-color: #3a3a5a; }
+    .inv-slot .item-icon { width: 36px; height: 36px; border-radius: 2px; }
+    .inv-slot .item-qty { position: absolute; bottom: 2px; right: 4px; font-size: 9px; color: #ffcc00; }
+    .rarity-common { border-color: #555 !important; }
+    .rarity-uncommon { border-color: #22aa22 !important; }
+    .rarity-rare { border-color: #2255dd !important; }
+    .rarity-epic { border-color: #9922dd !important; }
+    .rarity-legendary { border-color: #ff8800 !important; box-shadow: 0 0 6px rgba(255,136,0,0.4); }
+    #equip-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+    .equip-slot {
+      background: #0d0d1a; border: 1px solid #3a3a5a;
+      border-radius: 3px; padding: 6px; display: flex; gap: 8px; align-items: center;
+      cursor: pointer; transition: border-color 0.1s; font-size: 11px; color: #888;
+    }
+    .equip-slot:hover { border-color: #6666cc; }
+    .equip-slot .slot-icon { width: 32px; height: 32px; background: #1a1a2e; border-radius: 2px; flex-shrink: 0; }
+    #item-tooltip {
+      position: absolute; background: rgba(10,10,20,0.97); border: 1px solid #4a4a6a;
+      padding: 10px; border-radius: 4px; font-size: 11px; pointer-events: none;
+      z-index: 100; min-width: 160px; display: none;
+    }
+    #item-tooltip .tt-name { font-size: 13px; font-weight: bold; margin-bottom: 4px; }
+    #item-tooltip .tt-type { color: #888; font-size: 10px; margin-bottom: 6px; }
+    #item-tooltip .tt-stat { color: #aaeeff; font-size: 11px; }
+    #item-tooltip .tt-desc { color: #888; font-size: 10px; margin-top: 6px; font-style: italic; }
+
+    /* ── Skill Tree ── */
+    #skill-tree-screen canvas { border: 1px solid #2a2a4a; }
+    #skill-points-display { color: #ffcc00; font-size: 13px; margin-bottom: 8px; }
+
+    /* ── Quest Log ── */
+    .quest-item { padding: 10px; border-bottom: 1px solid #2a2a4a; cursor: pointer; }
+    .quest-item:hover { background: #1a1a2e; }
+    .quest-item.active-quest .quest-name { color: #ffcc00; }
+    .quest-item.completed-quest .quest-name { color: #44cc44; }
+    .quest-name { font-size: 13px; font-weight: bold; margin-bottom: 4px; }
+    .quest-desc { font-size: 11px; color: #888; }
+    .quest-objective { font-size: 11px; color: #aabb88; margin-top: 4px; }
+    .quest-reward { font-size: 11px; color: #ffcc44; margin-top: 4px; }
+
+    /* ── Character Sheet ── */
+    #char-sheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .stat-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1a1a2a; }
+    .stat-name { color: #aaa; font-size: 12px; }
+    .stat-val { color: #ffcc00; font-size: 13px; font-weight: bold; }
+    .stat-up-btn { background: #2a2a4a; border: 1px solid #4a4a6a; color: #aaffaa; width: 22px; height: 22px; cursor: pointer; border-radius: 2px; font-size: 13px; line-height: 1; }
+    .stat-up-btn:hover { background: #3a3a6a; }
+    #stat-points-left { color: #ffcc00; font-size: 13px; margin-bottom: 12px; }
+
+    /* ── Chat ── */
+    #chat-box {
+      position: absolute; bottom: 60px; left: 8px;
+      width: 280px; max-height: 150px; overflow-y: auto;
+      background: rgba(0,0,0,0.6); border: 1px solid #2a2a4a;
+      border-radius: 4px; padding: 6px; font-size: 11px;
+      z-index: 20; pointer-events: none;
+    }
+    .chat-msg { margin-bottom: 3px; line-height: 1.3; }
+    .chat-msg .chat-name { color: #88aaff; font-weight: bold; }
+    .chat-msg .chat-system { color: #ffaa44; font-style: italic; }
+    #chat-input-wrap {
+      position: absolute; bottom: 60px; left: 8px; width: 280px;
+      display: none; z-index: 30;
+    }
+    #chat-input {
+      width: 100%; background: rgba(0,0,0,0.85); color: #fff;
+      border: 1px solid #6666cc; padding: 6px 10px; font-family: inherit; font-size: 12px;
+      border-radius: 3px; outline: none;
+    }
+
+    /* ── Minimap ── */
+    #minimap {
+      position: absolute; top: 8px; right: 8px;
+      z-index: 15; border: 1px solid #3a3a5a; border-radius: 3px;
+      pointer-events: none;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #111; }
+    ::-webkit-scrollbar-thumb { background: #3a3a6a; border-radius: 3px; }
+
+    /* ── Notifications ── */
+    #notifications {
+      position: absolute; top: 60px; right: 8px;
+      z-index: 25; pointer-events: none; display: flex; flex-direction: column; gap: 4px; align-items: flex-end;
+    }
+    .notif {
+      background: rgba(0,0,0,0.85); border: 1px solid #4a4a6a;
+      padding: 6px 12px; border-radius: 3px; font-size: 12px;
+      animation: slideIn 0.3s ease; max-width: 200px; text-align: right;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+  </style>
+</head>
+<body>
+<div id="game-container">
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+  <!-- Loading Screen -->
+  <div id="loading-screen" class="screen active">
+    <h1>THE OUTBREAK</h1>
+    <p>Multiplayer RPG</p>
+    <div id="loading-bar-outer"><div id="loading-bar-inner"></div></div>
+    <div id="loading-tip">Loading world data...</div>
+  </div>
+
+  <!-- Main Menu -->
+  <div id="menu-screen" class="screen">
+    <h1>THE OUTBREAK</h1>
+    <div id="menu-subtitle">A TALE OF DARKNESS AND SURVIVAL</div>
+    <div id="menu-buttons">
+      <button class="btn primary" id="btn-new-game">⚔ NEW GAME</button>
+      <button class="btn" id="btn-continue">▶ CONTINUE</button>
+      <button class="btn" id="btn-about">? HOW TO PLAY</button>
+    </div>
+  </div>
+
+  <!-- Character Creation -->
+  <div id="char-create-screen" class="screen">
+    <h2>CREATE YOUR HERO</h2>
+    <div class="panel" style="max-width:600px;">
+      <div id="char-form">
+        <div>
+          <label>Character Name</label>
+          <input type="text" id="char-name" maxlength="20" placeholder="Enter your name..." autocomplete="off">
+        </div>
+        <div>
+          <label>Choose Your Class</label>
+          <div class="class-grid">
+            <div class="class-card selected" data-class="warrior">
+              <div class="class-icon warrior-color"></div>
+              <div class="class-name" style="color:#ff6666">WARRIOR</div>
+              <div class="class-desc">Master of melee combat. High strength and endurance. Specializes in swords and axes.</div>
+            </div>
+            <div class="class-card" data-class="mage">
+              <div class="class-icon mage-color"></div>
+              <div class="class-name" style="color:#6688ff">MAGE</div>
+              <div class="class-desc">Wielder of arcane magic. High magic stat. Casts devastating spells.</div>
+            </div>
+            <div class="class-card" data-class="archer">
+              <div class="class-icon archer-color"></div>
+              <div class="class-name" style="color:#66ff88">ARCHER</div>
+              <div class="class-desc">Swift and precise. High agility. Rains arrows from a distance.</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; gap:12px; justify-content:center; margin-top:8px;">
+          <button class="btn" id="btn-back-menu">← BACK</button>
+          <button class="btn primary" id="btn-start-game">BEGIN ADVENTURE →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div id="hud-bars">
+      <div class="bar-container">
+        <div class="bar-label">HP</div>
+        <div class="bar-outer" id="hp-bar">
+          <div class="bar-inner" id="hp-bar-inner" style="width:100%"></div>
+          <div class="bar-text" id="hp-text">100/100</div>
+        </div>
+      </div>
+      <div class="bar-container">
+        <div class="bar-label">MP</div>
+        <div class="bar-outer mana" id="mana-bar">
+          <div class="bar-inner" id="mana-bar-inner" style="width:100%"></div>
+          <div class="bar-text" id="mana-text">50/50</div>
+        </div>
+      </div>
+      <div class="bar-container">
+        <div class="bar-label">XP</div>
+        <div class="bar-outer xp" id="xp-bar">
+          <div class="bar-inner" id="xp-bar-inner" style="width:0%"></div>
+          <div class="bar-text" id="xp-text">0/100</div>
+        </div>
+      </div>
+      <div id="hud-info">
+        <div id="level-display">Lv.1</div>
+        <div id="gold-display">🪙 50</div>
+      </div>
+    </div>
+    <canvas id="minimap" width="150" height="150"></canvas>
+  </div>
+
+  <!-- Action Bar -->
+  <div id="action-bar">
+    <div class="action-slot" id="slot-1"><span class="key-hint">1</span></div>
+    <div class="action-slot" id="slot-2"><span class="key-hint">2</span></div>
+    <div class="action-slot" id="slot-3"><span class="key-hint">3</span></div>
+    <div class="action-slot" id="slot-4"><span class="key-hint">4</span></div>
+    <div class="action-slot" id="slot-5"><span class="key-hint">5</span></div>
+    <div class="action-slot" id="slot-6"><span class="key-hint">6</span></div>
+    <div class="action-slot" id="slot-7"><span class="key-hint">7</span></div>
+    <div class="action-slot" id="slot-8"><span class="key-hint">8</span></div>
+  </div>
+
+  <!-- Inventory Screen -->
+  <div id="inventory-screen" class="screen">
+    <button class="close-btn" data-close="inventory-screen">✕</button>
+    <h2>⚔ INVENTORY</h2>
+    <div style="display:flex; gap:16px; width:90%; max-width:720px;">
+      <div class="panel" style="flex:1;">
+        <div style="font-size:12px;color:#aaa;margin-bottom:8px;">BACKPACK <span id="inv-count">0/40</span></div>
+        <div id="inv-grid"></div>
+      </div>
+      <div class="panel" style="width:220px;">
+        <div style="font-size:12px;color:#aaa;margin-bottom:8px;">EQUIPPED</div>
+        <div id="equip-slots">
+          <div class="equip-slot" data-slot="weapon"><div class="slot-icon" id="eq-weapon-icon"></div><span id="eq-weapon-name">Weapon</span></div>
+          <div class="equip-slot" data-slot="armor"><div class="slot-icon" id="eq-armor-icon"></div><span id="eq-armor-name">Armor</span></div>
+          <div class="equip-slot" data-slot="helmet"><div class="slot-icon" id="eq-helmet-icon"></div><span id="eq-helmet-name">Helmet</span></div>
+          <div class="equip-slot" data-slot="boots"><div class="slot-icon" id="eq-boots-icon"></div><span id="eq-boots-name">Boots</span></div>
+          <div class="equip-slot" data-slot="ring"><div class="slot-icon" id="eq-ring-icon"></div><span id="eq-ring-name">Ring</span></div>
+          <div class="equip-slot" data-slot="amulet"><div class="slot-icon" id="eq-amulet-icon"></div><span id="eq-amulet-name">Amulet</span></div>
+        </div>
+        <div style="margin-top:12px;font-size:11px;color:#888;" id="gold-inv">Gold: <span style="color:#ffcc44" id="gold-inv-val">50</span></div>
+      </div>
+    </div>
+    <div id="item-tooltip"></div>
+  </div>
+
+  <!-- Skill Tree Screen -->
+  <div id="skill-tree-screen" class="screen">
+    <button class="close-btn" data-close="skill-tree-screen">✕</button>
+    <h2>✦ SKILL TREE</h2>
+    <div id="skill-points-display">Skill Points: <span id="skill-pts">0</span></div>
+    <div class="panel" style="width:90%;max-width:720px;overflow:hidden;">
+      <div id="skill-tree-tabs" style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="btn active-tab" data-tree="warrior">⚔ Warrior</button>
+        <button class="btn" data-tree="archer">🏹 Archer</button>
+        <button class="btn" data-tree="mage">✦ Mage</button>
+      </div>
+      <canvas id="skill-canvas" width="680" height="340"></canvas>
+    </div>
+  </div>
+
+  <!-- Quest Log Screen -->
+  <div id="quest-log-screen" class="screen">
+    <button class="close-btn" data-close="quest-log-screen">✕</button>
+    <h2>📜 QUEST LOG</h2>
+    <div style="display:flex;gap:12px;width:90%;max-width:720px;">
+      <div class="panel" style="width:220px;">
+        <div style="font-size:12px;color:#aaa;margin-bottom:8px;">ACTIVE QUESTS</div>
+        <div id="quest-list-active"></div>
+        <div style="font-size:12px;color:#aaa;margin-top:12px;margin-bottom:8px;">COMPLETED</div>
+        <div id="quest-list-completed"></div>
+      </div>
+      <div class="panel" style="flex:1;" id="quest-detail">
+        <div style="color:#666;font-size:12px;">Select a quest to view details.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Character Sheet Screen -->
+  <div id="character-screen" class="screen">
+    <button class="close-btn" data-close="character-screen">✕</button>
+    <h2>👤 CHARACTER</h2>
+    <div class="panel" style="width:90%;max-width:600px;">
+      <div id="stat-points-left">Stat Points: <span id="stat-pts">0</span></div>
+      <div id="char-sheet-grid">
+        <div>
+          <div style="font-size:11px;color:#aaa;margin-bottom:8px;">ATTRIBUTES</div>
+          <div class="stat-row"><span class="stat-name">Strength</span><span><span class="stat-val" id="stat-str">5</span> <button class="stat-up-btn" data-stat="strength">+</button></span></div>
+          <div class="stat-row"><span class="stat-name">Agility</span><span><span class="stat-val" id="stat-agi">5</span> <button class="stat-up-btn" data-stat="agility">+</button></span></div>
+          <div class="stat-row"><span class="stat-name">Magic</span><span><span class="stat-val" id="stat-mag">5</span> <button class="stat-up-btn" data-stat="magic">+</button></span></div>
+          <div class="stat-row"><span class="stat-name">Endurance</span><span><span class="stat-val" id="stat-end">5</span> <button class="stat-up-btn" data-stat="endurance">+</button></span></div>
+          <div class="stat-row"><span class="stat-name">Luck</span><span><span class="stat-val" id="stat-lck">5</span> <button class="stat-up-btn" data-stat="luck">+</button></span></div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#aaa;margin-bottom:8px;">COMBAT STATS</div>
+          <div class="stat-row"><span class="stat-name">Level</span><span class="stat-val" id="cs-level">1</span></div>
+          <div class="stat-row"><span class="stat-name">Max HP</span><span class="stat-val" id="cs-hp">100</span></div>
+          <div class="stat-row"><span class="stat-name">Max Mana</span><span class="stat-val" id="cs-mana">50</span></div>
+          <div class="stat-row"><span class="stat-name">Attack</span><span class="stat-val" id="cs-atk">10</span></div>
+          <div class="stat-row"><span class="stat-name">Defense</span><span class="stat-val" id="cs-def">5</span></div>
+          <div class="stat-row"><span class="stat-name">Crit Chance</span><span class="stat-val" id="cs-crit">5%</span></div>
+          <div class="stat-row"><span class="stat-name">Class</span><span class="stat-val" id="cs-class">Warrior</span></div>
+          <div class="stat-row"><span class="stat-name">Play Time</span><span class="stat-val" id="cs-time">0m</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div id="chat-box"></div>
+  <div id="chat-input-wrap">
+    <input type="text" id="chat-input" placeholder="Press Enter to send..." maxlength="120" autocomplete="off">
+  </div>
+
+  <!-- Notifications -->
+  <div id="notifications"></div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script type="module" src="/game/main.js"></script>
+</body>
+</html>
