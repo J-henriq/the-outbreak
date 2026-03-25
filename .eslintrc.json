@@ -1,0 +1,28 @@
+{
+  "env": {
+    "browser": true,
+    "es2022": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2022
+  },
+  "rules": {
+    "no-unused-vars": "warn",
+    "no-undef": "warn",
+    "semi": ["error", "always"],
+    "quotes": ["error", "single", { "avoidEscape": true }]
+  },
+  "globals": {
+    "CONFIG": "readonly",
+    "Player": "readonly",
+    "GearSystem": "readonly",
+    "DungeonGenerator": "readonly",
+    "EntityManager": "readonly",
+    "UISystem": "readonly",
+    "LeaderboardSystem": "readonly",
+    "Game": "readonly",
+    "requestAnimationFrame": "readonly",
+    "cancelAnimationFrame": "readonly",
+    "localStorage": "readonly"
+  }
+}
